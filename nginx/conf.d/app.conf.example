@@ -1,0 +1,57 @@
+# Example nginx site configuration
+
+# Upstream backend pointing to host port
+# Other stacks should publish to localhost like: "127.0.0.1:8001:3000"
+upstream example_backend {
+    # Use host.docker.internal to reach the host machine
+    # Port 8080 should match what your stack publishes to
+    server host.docker.internal:8080;
+    keepalive 32;
+}
+
+# HTTP server
+server {
+    listen 80;
+    server_name example.yourdomain.com;
+
+    # Redirect all HTTP to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTPS server
+server {
+    listen 443 ssl;
+    server_name example.yourdomain.com;
+
+    # SSL configuration (uses wildcard cert)
+    ssl_certificate /etc/nginx/ssl/cert.pem;
+    ssl_certificate_key /etc/nginx/ssl/key.pem;
+
+    # Logging
+    access_log /var/log/nginx/example-access.log upstreamlog;
+    error_log /var/log/nginx/example-error.log;
+
+    # Proxy to backend service
+    location / {
+        proxy_pass http://example_backend;
+
+        # Standard proxy headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+
+        # Timeouts
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+
+        # HTTP version for keepalive
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+    }
+}

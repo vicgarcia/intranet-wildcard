@@ -1,0 +1,11 @@
+# Environment and credentials
+.env
+namecheap-credentials.ini
+
+# SSL certificates and certbot data
+certbot/logs/
+certbot/letsencrypt/
+
+# Nginx logs (if any get written to disk)
+nginx/logs/
+*.log

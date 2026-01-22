@@ -1,0 +1,35 @@
+name: intranet-wildcard
+
+services:
+
+  nginx:
+    image: nginx:stable
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/entrypoint.sh:/entrypoint.sh:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/letsencrypt:/etc/letsencrypt:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: /entrypoint.sh
+
+  certbot:
+    build:
+      context: ./certbot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./certbot/entrypoint.sh:/entrypoint.sh:ro
+      - ./certbot/letsencrypt:/etc/letsencrypt
+      - ./certbot/namecheap-credentials.ini:/namecheap-credentials.ini:ro
+    environment:
+      - CERT_EMAIL=${CERT_EMAIL:-admin@yourdomain.com}
+      - DOMAIN=${DOMAIN:-yourdomain.com}
+      - CERT_STAGING=${CERT_STAGING:-0}
+    depends_on:
+      - nginx
+    entrypoint: /entrypoint.sh

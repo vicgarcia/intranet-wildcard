@@ -1,6 +1,6 @@
-I run a home server with a bunch of dockerized web apps - Open Drone Map, Homebridge, Open WebUI, that kind of thing. These services live on a private network (not internet-accessible), but I use local DNS on my router to access them by hostname. Modern browsers have made HTTP a second-class experience, for good reason, but still deserves a fix. That left me with two options: pay for a wildcard certificate or figure out Let's Encrypt.
+I run a home server with a bunch of dockerized web apps - Open Drone Map, Homebridge, Open WebUI, and more. These services live on a private network (not internet-accessible), but I use local DNS on my router to access them by hostname. HTTP isn't great on most modern browsers.
 
-This setup uses Let's Encrypt with the DNS-01 challenge via Namecheap's API to automatically generate and renew a wildcard SSL certificate. No HTTP challenge needed, which is perfect for private networks. The nginx container serves everything with valid SSL and proxies requests to localhost ports where other dockerized apps are listening. Set it and forget it.
+This setup uses Let's Encrypt with the DNS-01 challenge via Namecheap's API to automatically generate and renew SSL certificate. No HTTP challenge needed, which is perfect for private networks. The nginx container serves everything with valid SSL and proxies requests to localhost ports where other dockerized apps are listening.
 
 ## Setup
 
@@ -9,9 +9,9 @@ This setup uses Let's Encrypt with the DNS-01 challenge via Namecheap's API to a
 git clone git@github.com:vicgarcia/intranet-wildcard.git
 cd intranet-wildcard
 
-# Set your domain and email
+# Set your domain(s) and email
 cp .env.example .env
-nano .env  # Edit DOMAIN and CERT_EMAIL
+nano .env  # Edit DOMAINS and CERT_EMAIL
 
 # Add Namecheap API credentials
 # Get these from https://ap.www.namecheap.com/settings/tools/apiaccess/
@@ -116,12 +116,5 @@ docker compose restart nginx
 ## Security Notes
 
 - Use `127.0.0.1:PORT:PORT` for all app port mappings to prevent direct access
-- Your apps should only be accessible through nginx (SSL, potential auth, logging)
 - The `certbot/namecheap-credentials.ini` file contains your API key—it's gitignored, keep it that way
 - DNS-01 challenge means you don't need ports 80/443 open to the internet
-
-## Let's Encrypt Rate Limits
-
-- 50 certificates per registered domain per week
-- 5 duplicate certificates per week
-- Always test with `CERT_STAGING=1` first

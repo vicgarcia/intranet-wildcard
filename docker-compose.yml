@@ -27,8 +27,8 @@ services:
       - ./certbot/letsencrypt:/etc/letsencrypt
       - ./certbot/namecheap-credentials.ini:/namecheap-credentials.ini:ro
     environment:
-      - CERT_EMAIL=${CERT_EMAIL:-admin@yourdomain.com}
-      - DOMAIN=${DOMAIN:-yourdomain.com}
+      - CERT_EMAIL=${CERT_EMAIL}
+      - DOMAINS=${DOMAINS}
       - CERT_STAGING=${CERT_STAGING:-0}
     depends_on:
       - nginx

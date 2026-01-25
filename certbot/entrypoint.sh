@@ -8,9 +8,23 @@ sleep 10
 # Create in-memory logs directory (logs will still go to stdout/stderr with -v)
 mkdir -p /tmp/certbot-logs
 
+# Parse comma-separated domains into -d flags
+domain_flags=""
+IFS=','
+for domain in $DOMAINS; do
+  domain=$(echo "$domain" | xargs)
+  if [ -n "$domain" ]; then
+    domain_flags="$domain_flags -d $domain"
+  fi
+done
+unset IFS
+
+# Extract the first domain for the certificate directory name
+first_domain=$(echo "$DOMAINS" | cut -d',' -f1 | xargs)
+
 # Check if certificate already exists
-if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
-  echo "No certificate found for $DOMAIN, obtaining wildcard certificate..."
+if [ ! -d "/etc/letsencrypt/live/$first_domain" ]; then
+  echo "No certificate found for $first_domain, obtaining certificate for: $DOMAINS"
   staging_flag=""
   if [ "$CERT_STAGING" = "1" ]; then
     staging_flag="--staging"
@@ -27,12 +41,11 @@ if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
     --logs-dir /tmp/certbot-logs \
     -v \
     $staging_flag \
-    -d "$DOMAIN" \
-    -d "*.$DOMAIN" && \
-  echo "Wildcard certificate obtained successfully!" || \
+    $domain_flags && \
+  echo "Certificate obtained successfully for: $DOMAINS" || \
   echo "Failed to obtain certificate. Check credentials and DNS settings."
 else
-  echo "Certificate already exists for $DOMAIN"
+  echo "Certificate already exists for $first_domain"
 fi
 
 # Check for renewal every day at 2 AM

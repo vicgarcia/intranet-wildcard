@@ -14,14 +14,17 @@ openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
 CERT_DIR="/etc/letsencrypt/live"
 CERT_FOUND=0
 
-if [ -d "$CERT_DIR" ] && [ -n "$(ls -A $CERT_DIR 2>/dev/null)" ]; then
-  DOMAIN_DIR=$(ls -t $CERT_DIR | head -n 1)
-  if [ -f "$CERT_DIR/$DOMAIN_DIR/fullchain.pem" ]; then
-    echo "Certificate found in $DOMAIN_DIR, enabling HTTPS..."
-    ln -sf "$CERT_DIR/$DOMAIN_DIR/fullchain.pem" /etc/nginx/ssl/cert.pem
-    ln -sf "$CERT_DIR/$DOMAIN_DIR/privkey.pem" /etc/nginx/ssl/key.pem
-    CERT_FOUND=1
-  fi
+if [ -d "$CERT_DIR" ]; then
+  for dir in "$CERT_DIR"/*/ ; do
+    if [ -d "$dir" ] && [ -f "$dir/fullchain.pem" ] && [ -f "$dir/privkey.pem" ]; then
+      DOMAIN_DIR=$(basename "$dir")
+      echo "Certificate found in $DOMAIN_DIR, enabling HTTPS..."
+      ln -sf "$CERT_DIR/$DOMAIN_DIR/fullchain.pem" /etc/nginx/ssl/cert.pem
+      ln -sf "$CERT_DIR/$DOMAIN_DIR/privkey.pem" /etc/nginx/ssl/key.pem
+      CERT_FOUND=1
+      break
+    fi
+  done
 fi
 
 if [ $CERT_FOUND -eq 0 ]; then
@@ -36,15 +39,18 @@ NGINX_PID=$!
 (while :; do
   sleep 14400  # Check every 4 hours
   if [ $CERT_FOUND -eq 0 ] && [ -d "$CERT_DIR" ]; then
-    DOMAIN_DIR=$(ls -t $CERT_DIR 2>/dev/null | head -n 1)
-    if [ -n "$DOMAIN_DIR" ] && [ -f "$CERT_DIR/$DOMAIN_DIR/fullchain.pem" ]; then
-      echo "Certificates obtained! Setting up HTTPS..."
-      ln -sf "$CERT_DIR/$DOMAIN_DIR/fullchain.pem" /etc/nginx/ssl/cert.pem
-      ln -sf "$CERT_DIR/$DOMAIN_DIR/privkey.pem" /etc/nginx/ssl/key.pem
-      nginx -s reload
-      echo "Nginx reloaded with HTTPS enabled"
-      CERT_FOUND=1
-    fi
+    for dir in "$CERT_DIR"/*/ ; do
+      if [ -d "$dir" ] && [ -f "$dir/fullchain.pem" ] && [ -f "$dir/privkey.pem" ]; then
+        DOMAIN_DIR=$(basename "$dir")
+        echo "Certificates obtained! Setting up HTTPS..."
+        ln -sf "$CERT_DIR/$DOMAIN_DIR/fullchain.pem" /etc/nginx/ssl/cert.pem
+        ln -sf "$CERT_DIR/$DOMAIN_DIR/privkey.pem" /etc/nginx/ssl/key.pem
+        nginx -s reload
+        echo "Nginx reloaded with HTTPS enabled"
+        CERT_FOUND=1
+        break
+      fi
+    done
   fi
 done) &
 

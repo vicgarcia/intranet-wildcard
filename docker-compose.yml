@@ -12,7 +12,7 @@ services:
       - ./nginx/entrypoint.sh:/entrypoint.sh:ro
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./certbot/letsencrypt:/etc/letsencrypt:ro
+      - ./certbot/letsencrypt:/etc/letsencrypt
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: /entrypoint.sh
@@ -22,6 +22,7 @@ services:
       context: ./certbot
       dockerfile: Dockerfile
     restart: unless-stopped
+    user: "${UID}:${GID}"
     volumes:
       - ./certbot/entrypoint.sh:/entrypoint.sh:ro
       - ./certbot/letsencrypt:/etc/letsencrypt

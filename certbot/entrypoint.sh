@@ -6,7 +6,7 @@ echo "Certbot starting..."
 sleep 10
 
 # Create in-memory logs directory (logs will still go to stdout/stderr with -v)
-mkdir -p /tmp/certbot-logs
+mkdir -p /tmp/certbot-logs /tmp/certbot-work
 
 # Parse comma-separated domains into -d flags
 domain_flags=""
@@ -39,6 +39,7 @@ if [ ! -d "/etc/letsencrypt/live/$first_domain" ]; then
     --non-interactive \
     --email $CERT_EMAIL \
     --logs-dir /tmp/certbot-logs \
+    --work-dir /tmp/certbot-work \
     -v \
     $staging_flag \
     $domain_flags && \
@@ -56,6 +57,7 @@ while :; do
     --authenticator dns-namecheap \
     --dns-namecheap-credentials /namecheap-credentials.ini \
     --logs-dir /tmp/certbot-logs \
+    --work-dir /tmp/certbot-work \
     -v \
     --deploy-hook "echo 'Certificate renewed! Nginx will auto-reload.'"
 done

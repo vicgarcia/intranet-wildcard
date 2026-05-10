@@ -31,6 +31,7 @@ services:
       - CERT_EMAIL=${CERT_EMAIL}
       - DOMAINS=${DOMAINS}
       - CERT_STAGING=${CERT_STAGING:-0}
+      - TLDEXTRACT_CACHE=/tmp/tldextract-cache
     depends_on:
       - nginx
     entrypoint: /entrypoint.sh

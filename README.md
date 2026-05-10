@@ -109,8 +109,14 @@ docker compose exec nginx nginx -s reload
 
 **Force certificate renewal:**
 ```bash
-docker compose exec certbot certbot renew --force-renewal --logs-dir /tmp/certbot-logs -v
-docker compose restart nginx
+docker compose exec certbot certbot renew \
+  --authenticator dns-namecheap \
+  --dns-namecheap-credentials /namecheap-credentials.ini \
+  --logs-dir /tmp/certbot-logs \
+  --work-dir /tmp/certbot-work \
+  --force-renewal \
+  -v
+docker compose exec nginx nginx -s reload
 ```
 
 ## Security Notes

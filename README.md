@@ -94,6 +94,28 @@ docker compose logs -f nginx
 docker compose logs -f certbot
 ```
 
+## Manual Certificate Generation
+
+If you don't have Namecheap API access, you can obtain a certificate manually using the DNS challenge. You'll be prompted to add TXT records to your DNS:
+
+```bash
+docker run -it --rm \
+  -v $(pwd)/certbot/letsencrypt:/etc/letsencrypt \
+  certbot/certbot certonly \
+  --manual \
+  --preferred-challenges dns \
+  --email "your@email.com" \
+  --agree-tos \
+  --no-eff-email \
+  -d "yourdomain.com" \
+  -d "*.yourdomain.com"
+```
+
+Then restart nginx to load the certificate:
+```bash
+docker compose restart nginx
+```
+
 ## Troubleshooting
 
 **Check certificate status:**

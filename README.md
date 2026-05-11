@@ -184,3 +184,38 @@ ports:
 
 - The `certbot/namecheap-credentials.ini` file contains your API key—it's gitignored, keep it that way
 - DNS-01 challenge means you don't need ports 80/443 open to the internet
+
+## Alternative: Shared Docker Network
+
+Instead of localhost port mapping, you can connect app stacks to nginx via a shared Docker network. Each app's web service joins a proxy network that nginx also belongs to:
+
+```yaml
+# Your app's docker-compose.yml
+services:
+  myapp-db:
+    networks:
+      - internal        # private, no port mapping needed
+
+  myapp-web:
+    networks:
+      - internal
+      - proxy           # shared with nginx
+    expose:
+      - 3000            # no host port mapping
+
+networks:
+  internal:
+    name: myapp-internal
+  proxy:
+    name: proxy
+    external: true      # created by intranet-wildcard
+```
+
+```nginx
+# nginx/conf.d/myapp.conf
+upstream myapp_backend {
+    server myapp-web:3000;  # reach container directly by name
+}
+```
+
+The tradeoff: less isolation between stacks (any service on the proxy network can reach any other), but no host port mapping required. The localhost port approach is simpler to debug — `curl http://localhost:PORT` from the host always works.

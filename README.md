@@ -2,6 +2,33 @@ I run a home server with a bunch of dockerized web apps - Open Drone Map, Homebr
 
 This setup uses Let's Encrypt with the DNS-01 challenge via Namecheap's API to automatically generate and renew SSL certificate. No HTTP challenge needed, which is perfect for private networks. The nginx container serves everything with valid SSL and proxies requests to localhost ports where other dockerized apps are listening.
 
+## Architecture
+
+```
+┌───────────────────────────────────────────────────┐
+│                    Host Machine                   │
+│                                                   │
+│  ┌─────────────────────────────────────────────┐  │
+│  │              intranet-wildcard              │  │
+│  │   ┌───────────────────┐  ┌──────────────┐   │  │
+│  │   │       nginx       │  │   certbot    │   │  │
+│  │   │   :80  :443       │  │              │   │  │
+│  │   └────────┬──────────┘  └──────────────┘   │  │
+│  └────────────┼────────────────────────────────┘  │
+│               │ host.docker.internal              │
+│        ┌──────┴───────┐                           │
+│        ▼              ▼                           │
+│  127.0.0.1:8001  127.0.0.1:8002                   │
+│        ▲              ▲                           │
+│  ┌─────┴────┐   ┌─────┴────┐                      │
+│  │   app    │   │   app    │                      │
+│  │  stack   │   │  stack   │                      │
+│  └──────────┘   └──────────┘                      │
+└───────────────────────────────────────────────────┘
+```
+
+Each app stack publishes its web service to a `127.0.0.1` port on the host. Nginx proxies to those ports via `host.docker.internal`, terminating SSL for all services with a single wildcard certificate.
+
 ## Setup
 
 ```bash

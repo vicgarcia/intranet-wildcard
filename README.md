@@ -170,6 +170,17 @@ docker compose exec nginx nginx -s reload
 
 ## Security Notes
 
-- Use `127.0.0.1:PORT:PORT` for all app port mappings to prevent direct access
+**Always bind app ports to `127.0.0.1`**, not `0.0.0.0`, so they're only reachable from the host — not your entire network:
+
+```yaml
+# ✅ Correct — localhost only
+ports:
+  - "127.0.0.1:8001:3000"
+
+# ❌ Wrong — exposes to entire network
+ports:
+  - "8001:3000"
+```
+
 - The `certbot/namecheap-credentials.ini` file contains your API key—it's gitignored, keep it that way
 - DNS-01 challenge means you don't need ports 80/443 open to the internet

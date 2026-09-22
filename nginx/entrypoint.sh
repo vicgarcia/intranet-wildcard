@@ -31,19 +31,22 @@ done
 /docker-entrypoint.sh nginx -g 'daemon off;' &
 NGINX_PID=$!
 
-# Watch for certificate renewals and reload nginx
-(while :; do
+# Watch for certificate renewals and reload nginx when the cert changes.
+# set +e so a single failed reload (e.g. a broken conf.d file) doesn't kill the watcher for good.
+(set +e
+last_cert=$(readlink -f /etc/nginx/ssl/cert.pem)
+while :; do
   sleep 3600  # Check every hour
-  for dir in "$CERT_DIR"/*/; do
-    if [ -d "$dir" ] && [ -f "$dir/fullchain.pem" ] && [ -f "$dir/privkey.pem" ]; then
-      DOMAIN_DIR=$(basename "$dir")
-      ln -sf "$CERT_DIR/$DOMAIN_DIR/fullchain.pem" /etc/nginx/ssl/cert.pem
-      ln -sf "$CERT_DIR/$DOMAIN_DIR/privkey.pem" /etc/nginx/ssl/key.pem
-      nginx -s reload
+  current_cert=$(readlink -f /etc/nginx/ssl/cert.pem)
+  if [ "$current_cert" != "$last_cert" ]; then
+    echo "Certificate changed ($last_cert -> $current_cert), reloading nginx..."
+    if nginx -t && nginx -s reload; then
       echo "Nginx reloaded with updated certificate"
-      break
+      last_cert=$current_cert
+    else
+      echo "Nginx reload failed, will retry next hour"
     fi
-  done
+  fi
 done) &
 
 wait $NGINX_PID

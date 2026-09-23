@@ -4,6 +4,19 @@ set -e
 # Create SSL directory
 mkdir -p /etc/nginx/ssl
 
+# The catch-all server in nginx.conf needs a certificate to terminate TLS before
+# it can return 444, but it's never presented to a real client. Generate a
+# throwaway self-signed pair when missing; /etc/nginx/ssl is container-local, so
+# this runs on every fresh container.
+if [ ! -f /etc/nginx/ssl/default-cert.pem ] || [ ! -f /etc/nginx/ssl/default-key.pem ]; then
+  echo "Generating self-signed certificate for the default server..."
+  openssl req -x509 -newkey rsa:2048 -nodes \
+    -keyout /etc/nginx/ssl/default-key.pem \
+    -out /etc/nginx/ssl/default-cert.pem \
+    -days 3650 -subj "/CN=invalid" >/dev/null 2>&1
+  chmod 600 /etc/nginx/ssl/default-key.pem
+fi
+
 # Wait for certificate to exist before starting nginx
 CERT_DIR="/etc/letsencrypt/live"
 CERT_FOUND=0

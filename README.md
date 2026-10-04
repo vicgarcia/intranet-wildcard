@@ -1,30 +1,19 @@
-I run a home server with a bunch of dockerized web apps - Open Drone Map, Homebridge, Open WebUI, and more. These services live on a private network (not internet-accessible), but I use local DNS on my router to access them by hostname. HTTP isn't great on most modern browsers.
+I run a home server with a bunch of dockerized web apps - [Homebridge](https://github.com/vicgarcia/homebridge-docker), [Plex](https://github.com/vicgarcia/plex-docker), [Open Drone Map](https://github.com/vicgarcia/odm-docker), and [more](https://github.com/vicgarcia/glances-docker). These services live on a private network (not internet-accessible), but I use local DNS on my router to access them by hostname. HTTP isn't great on most modern browsers.
 
 This setup uses Let's Encrypt with the DNS-01 challenge via Namecheap's API to automatically generate and renew SSL certificate. No HTTP challenge needed, which is perfect for private networks. The nginx container serves everything with valid SSL and proxies requests to localhost ports where other dockerized apps are listening.
 
 ## Architecture
 
-```
-┌───────────────────────────────────────────────────┐
-│                    Host Machine                   │
-│                                                   │
-│  ┌─────────────────────────────────────────────┐  │
-│  │              intranet-wildcard              │  │
-│  │   ┌───────────────────┐  ┌──────────────┐   │  │
-│  │   │       nginx       │  │   certbot    │   │  │
-│  │   │   :80  :443       │  │              │   │  │
-│  │   └────────┬──────────┘  └──────────────┘   │  │
-│  └────────────┼────────────────────────────────┘  │
-│               │ host.docker.internal              │
-│        ┌──────┴───────┐                           │
-│        ▼              ▼                           │
-│  127.0.0.1:8001  127.0.0.1:8002                   │
-│        ▲              ▲                           │
-│  ┌─────┴────┐   ┌─────┴────┐                      │
-│  │   app    │   │   app    │                      │
-│  │  stack   │   │  stack   │                      │
-│  └──────────┘   └──────────┘                      │
-└───────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph host["Host Machine"]
+        subgraph iw["intranet-wildcard"]
+            nginx["nginx<br/>:80 / :443"]
+            certbot["certbot"]
+        end
+        nginx -- "host.docker.internal:8001" --> app1["app stack<br/>127.0.0.1:8001"]
+        nginx -- "host.docker.internal:8002" --> app2["app stack<br/>127.0.0.1:8002"]
+    end
 ```
 
 Each app stack publishes its web service to a `127.0.0.1` port on the host. Nginx proxies to those ports via `host.docker.internal`, terminating SSL for all services with a single wildcard certificate.
